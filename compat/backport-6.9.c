@@ -10,6 +10,10 @@
 
 #include <linux/version.h>
 #include <linux/string.h>
+#include <linux/overflow.h>
+#include <linux/math64.h>
+#include <linux/bug.h>
+#include <linux/errno.h>
 
 #include <drm/drm_print.h>
 #include <drm/display/drm_dp_helper.h>
@@ -29,7 +33,10 @@
  */
 void *kmemdup_array(const void *src, size_t element_size, size_t count, gfp_t gfp)
 {
-	return kmemdup(src, size_mul(element_size, count), gfp);
+	size_t total_size;
+	if (check_mul_overflow(element_size, count, &total_size))
+		return NULL;
+	return kmemdup(src, total_size, gfp);
 }
 
 static const char *dp_pixelformat_get_name(enum dp_pixelformat pixelformat)
@@ -226,8 +233,7 @@ int drm_dp_max_dprx_data_rate(int max_link_rate, int max_lanes)
 	int ch_coding_efficiency =
 		drm_dp_bw_channel_coding_efficiency(drm_dp_is_uhbr_rate(max_link_rate));
 
-	return DIV_ROUND_DOWN_ULL(mul_u32_u32(max_link_rate * 10 * max_lanes,
-					      ch_coding_efficiency),
+	return DIV_ROUND_DOWN_ULL((u64)max_link_rate * 10 * max_lanes * ch_coding_efficiency,
 				  1000000 * 8);
 }
 
