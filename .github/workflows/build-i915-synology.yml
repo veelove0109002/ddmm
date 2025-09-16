@@ -217,6 +217,19 @@ jobs:
           # Set additional build flags to avoid common build issues
           MAKEFLAGS_COMMON="NO_WERROR=1 HOSTCFLAGS=-Wno-error\ -Wno-error=use-after-free SKIP_STACK_VALIDATION=1 NO_OBJTOOL=1 OBJTOOL=/bin/true"
           
+          # Ensure include directory exists and run configure manually if needed
+          mkdir -p "$GITHUB_WORKSPACE/include"
+          if [ ! -f "$GITHUB_WORKSPACE/include/config.h" ]; then
+            echo "Running configure script manually..."
+            export KBUILD_EXTMOD="$GITHUB_WORKSPACE"
+            export KBUILD_MODULES=1
+            export CC="${CROSS_COMPILE}gcc"
+            export KBUILD_CPPFLAGS="-I$KDIR/include -I$KDIR/arch/$ARCH/include -I$KDIR/arch/$ARCH/include/generated"
+            export KBUILD_CFLAGS="-Wall -Wundef -Werror=strict-prototypes -Wno-trigraphs"
+            export LINUXINCLUDE="-I$KDIR/include -I$KDIR/arch/$ARCH/include -I$KDIR/arch/$ARCH/include/generated -I$KDIR/include/uapi -I$KDIR/arch/$ARCH/include/uapi"
+            /bin/sh "$GITHUB_WORKSPACE/configure" 2>&1 | tee -a "$LOGDIR/configure.log"
+          fi
+          
           # Build the module with proper error handling
           make -C "$KDIR" M="$GITHUB_WORKSPACE" ARCH="$ARCH" CROSS_COMPILE="$CROSS_COMPILE" $MAKEFLAGS_COMMON modules -j$(nproc) ${{ inputs.extra_make_args }} 2>&1 | tee -a "$LOGDIR/module_build.log"
 
