@@ -2,7 +2,7 @@
 # i915 module - copied from drivers/gpu/drm/i915/Makefile
 #
 
-$(shell $(KBUILD_EXTMOD)/configure)
+$(shell /bin/sh $(src)/configure)
 
 ccflags-y += -DCONFIG_DRM_I915_GVT -DI915
 
@@ -408,14 +408,14 @@ include $(KBUILD_EXTMOD)/drivers/gpu/drm/i915/gvt/Makefile
 # compat backports
 
 compat-y += \
-	compat/backport-6.9.o \
-	compat/backport-6.9/drm_dp_tunnel.o \
-	compat/backport-6.10.o \
-	compat/backport-6.11.o \
-	compat/backport-6.12.o 
+	compat/backport-6.9 \
+	compat/backport-6.9/drm_dp_tunnel \
+	compat/backport-6.10 \
+	compat/backport-6.11 \
+	compat/backport-6.12
 
 i915-y := \
-	$(compat-y) \
+	$(addsuffix .o,$(compat-y)) \
 	$(addprefix drivers/gpu/drm/i915/,$(i915-y))
 
 kvmgt-y := \
